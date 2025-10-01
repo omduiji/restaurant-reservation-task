@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col gap-y-12">
+  <main class="flex flex-col gap-y-12">
     <section
       class="flex flex-col sm:flex-row items-start sm:items-center gap-4 justify-between bg-white p-6 rounded-lg"
     >
@@ -60,7 +60,7 @@
       @close="closeEditModal"
     />
     <AppLoader :loading="loading" overlay :text="loaderText" />
-  </div>
+  </main>
 </template>
 
 <script setup lang="ts">
