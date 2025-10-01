@@ -135,7 +135,6 @@ const selectedBranch = ref<Branch | null>(null)
 const confirmationModal = ref()
 const loaderText = ref('')
 
-// Table configuration
 const tableColumns: TableColumn[] = [
   {
     key: 'name',
@@ -163,13 +162,11 @@ const tableColumns: TableColumn[] = [
   },
 ]
 
-// Methods
 const fetchData = async () => {
   await fetchBranches()
 }
 
 const openSettings = (branch: Branch): void => {
-  console.log('Opening settings for:', branch.name)
   selectedBranch.value = branch
   showEditBranchModal.value = true
 }

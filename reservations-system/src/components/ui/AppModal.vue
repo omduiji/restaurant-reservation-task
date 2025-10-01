@@ -1,39 +1,32 @@
 <template>
-  <Teleport to="body">
-    <dialog
-      v-if="isOpen"
-      ref="dialogRef"
-      class="popup-dialog"
-      @close="handleClose"
-      @cancel="handleCancel"
-      @click="handleBackdropClick"
-    >
-      <div class="popup-content" @click.stop>
-        <!-- Header Section -->
-        <div class="popup-header" v-if="$slots.header || title">
-          <slot name="header">
-            <h2 class="popup-title">{{ title }}</h2>
-          </slot>
-          <button
-            v-if="showCloseButton"
-            class="popup-close"
-            @click="close"
-            aria-label="Close dialog"
-          >
-            &times;
-          </button>
-        </div>
-
-        <div class="popup-body">
-          <slot></slot>
-        </div>
-
-        <div class="popup-footer" v-if="$slots.footer">
-          <slot name="footer"></slot>
-        </div>
+  <dialog
+    v-if="isOpen"
+    ref="dialogRef"
+    class="popup-dialog"
+    @close="handleClose"
+    @cancel="handleCancel"
+    @click="handleBackdropClick"
+  >
+    <div class="popup-content" @click.stop>
+      <!-- Header Section -->
+      <div class="popup-header" v-if="$slots.header || title">
+        <slot name="header">
+          <h2 class="popup-title">{{ title }}</h2>
+        </slot>
+        <button v-if="showCloseButton" class="popup-close" @click="close" aria-label="Close dialog">
+          &times;
+        </button>
       </div>
-    </dialog>
-  </Teleport>
+
+      <div class="popup-body">
+        <slot></slot>
+      </div>
+
+      <div class="popup-footer" v-if="$slots.footer">
+        <slot name="footer"></slot>
+      </div>
+    </div>
+  </dialog>
 </template>
 
 <script setup lang="ts">
@@ -85,14 +78,6 @@ const open = async () => {
 
     if (dialogRef.value) {
       dialogRef.value.showModal()
-
-      setTimeout(() => {
-        if (dialogRef.value) {
-          dialogRef.value.style.top = '50%'
-          dialogRef.value.style.left = '50%'
-          dialogRef.value.style.transform = 'translate(-50%, -50%)'
-        }
-      }, 0)
     }
 
     emit('open')
@@ -145,22 +130,14 @@ defineExpose({ open, close })
   width: fit-content;
   min-width: 400px;
   background: white;
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  margin: 0;
+  margin: auto;
   display: flex;
   flex-direction: column;
-  z-index: 1000;
 }
 
 @media (max-height: 600px) {
   .popup-dialog {
     max-height: 95vh;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    margin: 0;
   }
 }
 
@@ -169,7 +146,6 @@ defineExpose({ open, close })
     min-width: 95vw;
     width: 95vw;
     max-width: 95vw;
-    margin: 0;
   }
 }
 

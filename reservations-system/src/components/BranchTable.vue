@@ -114,7 +114,6 @@
 
 <script setup lang="ts">
 export type TableItem = Record<string, unknown> & { id?: string | number }
-// Define a more flexible base type
 
 export interface TableColumn {
   key: string
@@ -123,25 +122,12 @@ export interface TableColumn {
   cellClass?: string
 }
 
-// export interface TableAction {
-//   label: string
-//   class: string
-//   handler: (item: TableItem, event?: Event) => void | Promise<void>
-// }
 export interface TableAction<T = TableItem> {
   label: string
   class: string
   handler: (item: T, event?: Event) => void | Promise<void>
 }
 
-// export interface TableProps {
-//   data: TableItem[]
-//   columns: TableColumn[]
-//   actions?: TableAction[]
-//   rowClass?: (item: TableItem) => string
-//   rowClick?: (item: TableItem, event?: Event) => void
-//   keyField?: string
-// }
 export interface TableProps<T = TableItem> {
   data: T[]
   columns: TableColumn[]
@@ -202,8 +188,6 @@ const handleActionClick = (action: TableAction, item: TableItem, event: Event): 
   emit('actionClick', action, item)
 }
 </script>
-
-<!-- Template remains exactly the same -->
 
 <style scoped>
 .table-container {
