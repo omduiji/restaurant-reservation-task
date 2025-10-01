@@ -113,9 +113,8 @@
 </template>
 
 <script setup lang="ts">
-interface BaseItem extends Record<string, unknown> {
-  id?: string | number
-}
+export type TableItem = Record<string, unknown> & { id?: string | number }
+// Define a more flexible base type
 
 export interface TableColumn {
   key: string
@@ -124,30 +123,43 @@ export interface TableColumn {
   cellClass?: string
 }
 
-export interface TableAction<T = BaseItem> {
+// export interface TableAction {
+//   label: string
+//   class: string
+//   handler: (item: TableItem, event?: Event) => void | Promise<void>
+// }
+export interface TableAction<T = TableItem> {
   label: string
   class: string
   handler: (item: T, event?: Event) => void | Promise<void>
 }
 
-export interface TableProps<T = BaseItem> {
+// export interface TableProps {
+//   data: TableItem[]
+//   columns: TableColumn[]
+//   actions?: TableAction[]
+//   rowClass?: (item: TableItem) => string
+//   rowClick?: (item: TableItem, event?: Event) => void
+//   keyField?: string
+// }
+export interface TableProps<T = TableItem> {
   data: T[]
   columns: TableColumn[]
   actions?: TableAction<T>[]
   rowClass?: (item: T) => string
   rowClick?: (item: T, event?: Event) => void
   keyField?: string
+  genericType?: string
 }
 
 const props = defineProps<TableProps>()
-console.log(props)
 
 const emit = defineEmits<{
-  rowClick: [item: BaseItem]
-  actionClick: [action: TableAction<BaseItem>, item: BaseItem]
+  rowClick: [item: TableItem]
+  actionClick: [action: TableAction, item: TableItem]
 }>()
 
-const getKey = (item: BaseItem, index: number): string | number => {
+const getKey = (item: TableItem, index: number): string | number => {
   const key = props.keyField && props.keyField in item ? item[props.keyField] : undefined
   const keyValue = key as string | number | undefined
 
@@ -157,7 +169,7 @@ const getKey = (item: BaseItem, index: number): string | number => {
   return index
 }
 
-const getNestedValue = (obj: BaseItem, path: string): unknown => {
+const getNestedValue = (obj: TableItem, path: string): unknown => {
   if (typeof obj !== 'object' || obj === null) return ''
 
   return path.split('.').reduce((current: unknown, key: string) => {
@@ -172,7 +184,7 @@ const getNestedValue = (obj: BaseItem, path: string): unknown => {
   }, obj)
 }
 
-const handleRowClick = (item: BaseItem, event: Event): void => {
+const handleRowClick = (item: TableItem, event: Event): void => {
   event.stopPropagation()
   event.preventDefault()
 
@@ -182,7 +194,7 @@ const handleRowClick = (item: BaseItem, event: Event): void => {
   emit('rowClick', item)
 }
 
-const handleActionClick = (action: TableAction<BaseItem>, item: BaseItem, event: Event): void => {
+const handleActionClick = (action: TableAction, item: TableItem, event: Event): void => {
   event.stopPropagation()
   event.preventDefault()
 
@@ -190,6 +202,8 @@ const handleActionClick = (action: TableAction<BaseItem>, item: BaseItem, event:
   emit('actionClick', action, item)
 }
 </script>
+
+<!-- Template remains exactly the same -->
 
 <style scoped>
 .table-container {

@@ -22,6 +22,7 @@
         :actions="tableActions"
         :row-click="handleRowClick"
         key-field="id"
+        generic-type="branch"
       >
         <template #empty>
           <div class="flex flex-col items-center justify-center py-12">
@@ -73,7 +74,7 @@ import AppButton from './components/ui/AppButton.vue'
 import AppLoader from './components/ui/AppLoader.vue'
 import { useBranches } from './composables/useBranches'
 import { useConfirmationModal } from './composables/useConfirmationModal'
-import type { Branch, ReservationSettings } from './types/index'
+import type { Branch, ReservationSettings, WeekDay } from './types/index'
 
 const {
   confirmationState,
@@ -178,7 +179,11 @@ const closeEditModal = (): void => {
   selectedBranch.value = null
 }
 
-const handleSaveBranchSettings = async (settings: ReservationSettings): Promise<void> => {
+const handleSaveBranchSettings = async (
+  settings: Omit<ReservationSettings, 'schedules'> & {
+    reservation_times: Record<WeekDay, [string, string][]>
+  },
+): Promise<void> => {
   try {
     if (!selectedBranch.value) return
     loaderText.value = 'Updating branch settings...'

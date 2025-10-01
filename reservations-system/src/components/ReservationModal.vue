@@ -11,20 +11,21 @@
     </template>
 
     <FormWrapper
-      :key="formKey"
+      :key="`Edit-${branch?.id}`"
       :initial-values="initialFormValues"
       @submit="handleSubmit"
       v-slot="{ meta, isSubmitting: veeSubmitting, values, setFieldValue }"
     >
       <div class="space-y-6">
-        <!-- Reservation Duration -->
         <div
           class="mx-auto p-3 border border-l-0 border-r-0 border-t-primary-200 border-b-primary-200 bg-primary-600"
         >
           <p class="text-primary-100 font-bold">
-            Branch Working Hours from {{ branch?.opening_from }} - {{ branch?.opening_to }}
+            Branch Working Hours from {{ branch?.opening_from ?? 'N/A' }} -
+            {{ branch?.opening_to ?? 'N/A' }}
           </p>
         </div>
+
         <AppTextInput
           type="number"
           label="Reservation Duration (minutes)*"
@@ -36,7 +37,6 @@
           :max="480"
         />
 
-        <!-- Tables Selection -->
         <AppSelectInput
           :options="tableOptions"
           label="Available Tables"
@@ -46,14 +46,11 @@
           validation-name="enabled_tables"
         />
 
-        <!-- Days Schedule -->
         <div class="space-y-4">
           <h3 class="text-lg font-semibold text-gray-900">Weekly Schedule</h3>
           <p class="text-sm text-gray-600">
             Set available time slots for each day (max 3 slots per day)
           </p>
-
-          <!-- Hidden field for schedules validation -->
           <Field name="schedules" :rules="validateSchedules" v-slot="{ errors }">
             <input type="hidden" :value="JSON.stringify(values.schedules)" />
             <span v-if="errors.length" class="text-red-500 block mb-4 text-sm">
@@ -109,7 +106,6 @@
           </div>
         </div>
 
-        <!-- Form Actions -->
         <div class="popup-footer">
           <AppButton variant="secondary" type="button" @click="close" :disabled="veeSubmitting">
             Cancel
@@ -124,14 +120,27 @@
         </div>
       </div>
     </FormWrapper>
+    <AppConfirmationModal
+      v-model="confirmationState.show"
+      :title="confirmationState.modalTitle"
+      :message="confirmationState.modalMessage"
+      :confirm-text="confirmationState.confirmText"
+      :cancel-text="confirmationState.cancelText"
+      :variant="confirmationState.variant"
+      :loading="confirmationState.loading"
+      @confirm="handleConfirm"
+      @cancel="handleCancel"
+    />
   </AppModal>
 </template>
 
 <script setup lang="ts">
+import { useConfirmationModal } from '@/composables/useConfirmationModal'
 import { generateId } from '@/utils'
 import { Field } from 'vee-validate'
-import { computed, ref, watch } from 'vue'
-import type { Branch, ReservationSettings, TimeSlot, WeekDay } from '../types'
+import { computed } from 'vue'
+import type { Branch, DaySchedule, ReservationSettings, TimeSlot, WeekDay } from '../types'
+import AppConfirmationModal from './AppConfirmationModal.vue'
 import TimeSlotInput from './TimeSlotInput.vue'
 import AppButton from './ui/AppButton.vue'
 import AppModal from './ui/AppModal.vue'
@@ -145,7 +154,31 @@ interface Props {
 
 interface Emits {
   (e: 'update:modelValue', value: boolean): void
-  (e: 'save', settings: ReservationSettings): void
+  (
+    e: 'save',
+    settings: Omit<ReservationSettings, 'schedules'> & {
+      reservation_times: Record<WeekDay, [string, string][]>
+    },
+  ): void
+}
+
+interface FormValues {
+  reservation_duration: number
+  enabled_tables: string[]
+  schedules: DaySchedule[]
+}
+
+interface ValidationContext {
+  form?: {
+    values?: {
+      reservation_duration?: number
+    }
+  }
+}
+
+interface SelectOption {
+  value: string
+  label: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -155,7 +188,63 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<Emits>()
 
-// Use computed property for isOpen to sync with modelValue
+const {
+  confirmationState,
+  registerConfirmation,
+  openConfirmation,
+  handleConfirm,
+  handleCancel,
+  showResult,
+} = useConfirmationModal()
+
+// registerConfirmation('applySaturdayToAll', {
+//   modalTitle: 'Apply Saturday Schedule to All Days',
+//   modalMessage:
+//     'This will override all existing time slots for all days with the Saturday schedule. This action cannot be undone.',
+//   confirmText: 'Apply to All Days',
+//   cancelText: 'Cancel',
+//   variant: 'warning',
+//   successMessage: 'All reservations have been successfully disabled.',
+//   errorMessage: 'Failed to disable reservations. Please try again.',
+//   onConfirm: (data: {
+//     values: FormValues
+//     setFieldValue: (field: string, value: unknown) => void
+//   }) => {
+//     applySaturdaySchedule(data.values, data.setFieldValue)
+//   },
+// })
+registerConfirmation('applySaturdayToAll', {
+  modalTitle: 'Apply Saturday Schedule to All Days',
+  modalMessage:
+    'This will override all existing time slots for all days with the Saturday schedule. This action cannot be undone.',
+  confirmText: 'Apply to All Days',
+  cancelText: 'Cancel',
+  variant: 'warning',
+  onConfirm: async (data: {
+    values: FormValues
+    setFieldValue: (field: string, value: unknown) => void
+  }) => {
+    try {
+      applySaturdaySchedule(data.values, data.setFieldValue)
+      setTimeout(() => {
+        showResult(
+          'Success!',
+          'Saturday schedule has been applied to all days successfully.',
+          'success',
+        )
+      }, 100)
+    } catch (error) {
+      setTimeout(() => {
+        showResult(
+          'Error',
+          String(error) || 'Failed to apply Saturday schedule. Please try again.',
+          'danger',
+        )
+      }, 100)
+    }
+  },
+})
+
 const isOpen = computed({
   get: () => props.modelValue,
   set: (value: boolean) => {
@@ -163,7 +252,6 @@ const isOpen = computed({
   },
 })
 
-// Week days in order
 const weekDays: WeekDay[] = [
   'saturday',
   'sunday',
@@ -174,23 +262,17 @@ const weekDays: WeekDay[] = [
   'friday',
 ]
 
-// Form key to force re-initialization when branch changes
-const formKey = ref(0)
-
-// Initial form values computed from branch data
-const initialFormValues = computed(() => {
+const initialFormValues = computed<FormValues>(() => {
   if (!props.branch) {
     return getDefaultFormValues()
   }
 
-  console.log('Computing initial form values from branch:', props.branch)
+  const schedules: DaySchedule[] = weekDays.map((day) => {
+    const daySlots = props.branch?.reservation_times?.[day]
 
-  // Convert API format to form format
-  const schedules = weekDays.map((day) => {
-    const daySlots = props.branch?.reservation_times?.[day] || []
     const validSlots = Array.isArray(daySlots)
       ? daySlots.filter(
-          (slot) =>
+          (slot): slot is [string, string] =>
             Array.isArray(slot) &&
             slot.length === 2 &&
             typeof slot[0] === 'string' &&
@@ -206,7 +288,6 @@ const initialFormValues = computed(() => {
       end_time: slot[1],
     }))
 
-    // Ensure at least one time slot per day
     if (timeSlots.length === 0) {
       timeSlots.push({
         id: `slot-${day}-0`,
@@ -221,7 +302,6 @@ const initialFormValues = computed(() => {
     }
   })
 
-  // Get enabled tables
   const enabledTables: string[] = []
 
   if (props.branch.sections && Array.isArray(props.branch.sections)) {
@@ -236,18 +316,16 @@ const initialFormValues = computed(() => {
     })
   }
 
-  const formValues = {
+  const formValues: FormValues = {
     reservation_duration: props.branch.reservation_duration,
     enabled_tables: enabledTables,
     schedules,
   }
 
-  console.log('Computed form values:', formValues)
   return formValues
 })
 
-// Default form values
-function getDefaultFormValues() {
+function getDefaultFormValues(): FormValues {
   return {
     reservation_duration: 60,
     enabled_tables: [],
@@ -264,10 +342,10 @@ function getDefaultFormValues() {
   }
 }
 
-// Table options for dropdown
-const tableOptions = computed(() => {
+const tableOptions = computed<SelectOption[]>(() => {
   if (!props.branch) return []
-  const options: Array<{ value: string; label: string }> = []
+
+  const options: SelectOption[] = []
 
   if (props.branch.sections && Array.isArray(props.branch.sections)) {
     props.branch.sections.forEach((section) => {
@@ -283,38 +361,34 @@ const tableOptions = computed(() => {
       }
     })
   }
+
   return options
 })
 
-// Watch for branch changes and reset form
-watch(
-  () => props.branch,
-  (newBranch) => {
-    console.log('Branch changed:', newBranch)
-    // Increment formKey to force FormWrapper re-initialization
-    formKey.value++
-  },
-)
-
-// Validation function for schedules
-const validateSchedules = (schedules: any, context: any) => {
+const validateSchedules = (schedules: unknown, context?: ValidationContext): string | boolean => {
   if (!schedules || !Array.isArray(schedules)) {
     return 'Invalid schedule data'
   }
 
-  for (const schedule of schedules) {
+  const typedSchedules = schedules as DaySchedule[]
+  const reservationDuration = context?.form?.values?.reservation_duration ?? 60
+
+  for (const schedule of typedSchedules) {
     if (!schedule.time_slots || schedule.time_slots.length === 0) {
       return `${schedule.day} must have at least one time slot`
     }
+
     if (schedule.time_slots.length > 3) {
       return `${schedule.day} cannot have more than 3 time slots`
     }
 
     for (let i = 0; i < schedule.time_slots.length; i++) {
       const slot = schedule.time_slots[i]
+
       if (!slot || typeof slot.start_time !== 'string' || typeof slot.end_time !== 'string') {
         return `Invalid time slot data for ${schedule.day} slot ${i + 1}`
       }
+
       // Validate time format
       const timeRegex = /^([0-1][0-9]|2[0-3]):([0-5][0-9])$/
       if (!timeRegex.test(slot.start_time)) {
@@ -329,19 +403,21 @@ const validateSchedules = (schedules: any, context: any) => {
       const [endHours, endMinutes] = slot.end_time.split(':').map(Number)
       const startMinutesTotal = startHours * 60 + startMinutes
       const endMinutesTotal = endHours * 60 + endMinutes
-      const reservationDuration = context?.form?.reservation_duration
-      const slotDurationMinutes = endMinutesTotal - startMinutesTotal
 
       if (startMinutesTotal >= endMinutesTotal) {
-        return `Start time must be before end time for ${schedule.day} slot ${i + 1}`
+        return `Start time must be before end time for ${schedule.day} slot ${i + 1}. Time slots cannot cross midnight.`
       }
+
+      // Validate minimum slot duration
+      const slotDurationMinutes = endMinutesTotal - startMinutesTotal
       if (slotDurationMinutes < reservationDuration) {
-        return `Time slot must be at least ${reservationDuration} minutes long`
+        return `Time slot on ${schedule.day} (slot ${i + 1}) must be at least ${reservationDuration} minutes long (current reservation duration)`
       }
 
       // Check for overlapping slots
       for (let j = i + 1; j < schedule.time_slots.length; j++) {
         const otherSlot = schedule.time_slots[j]
+
         if (
           !otherSlot ||
           typeof otherSlot.start_time !== 'string' ||
@@ -349,12 +425,13 @@ const validateSchedules = (schedules: any, context: any) => {
         ) {
           continue
         }
+
         const [otherStartHours, otherStartMinutes] = otherSlot.start_time.split(':').map(Number)
         const [otherEndHours, otherEndMinutes] = otherSlot.end_time.split(':').map(Number)
         const otherStartMinutesTotal = otherStartHours * 60 + otherStartMinutes
         const otherEndMinutesTotal = otherEndHours * 60 + otherEndMinutes
 
-        // Check if slots overlap
+        // Check if slots overlap (back-to-back allowed)
         if (startMinutesTotal < otherEndMinutesTotal && endMinutesTotal > otherStartMinutesTotal) {
           return `Time slots overlap on ${schedule.day}`
         }
@@ -365,27 +442,25 @@ const validateSchedules = (schedules: any, context: any) => {
   return true
 }
 
-// Get time slots for a specific day from form values
-const getTimeSlotsForDay = (day: WeekDay, values: any) => {
-  const daySchedule = values.schedules?.find((schedule: any) => schedule.day === day)
+const getTimeSlotsForDay = (day: WeekDay, values: FormValues): TimeSlot[] => {
+  const daySchedule = values.schedules?.find((schedule) => schedule.day === day)
   return daySchedule ? daySchedule.time_slots : []
 }
 
-// Handle time slot updates using setFieldValue
 const handleTimeSlotUpdate = (
   day: WeekDay,
   index: number,
   field: 'start_time' | 'end_time',
   value: string,
-  values: any,
-  setFieldValue: (field: string, value: any) => void,
-) => {
-  const dayIndex = values.schedules.findIndex((schedule: any) => schedule.day === day)
+  values: FormValues,
+  setFieldValue: (field: string, value: unknown) => void,
+): void => {
+  const dayIndex = values.schedules.findIndex((schedule) => schedule.day === day)
   if (dayIndex !== -1 && values.schedules[dayIndex].time_slots[index]) {
     const updatedSchedules = [...values.schedules]
     updatedSchedules[dayIndex] = {
       ...updatedSchedules[dayIndex],
-      time_slots: updatedSchedules[dayIndex].time_slots.map((slot: any, i: number) =>
+      time_slots: updatedSchedules[dayIndex].time_slots.map((slot, i) =>
         i === index ? { ...slot, [field]: value } : slot,
       ),
     }
@@ -393,13 +468,12 @@ const handleTimeSlotUpdate = (
   }
 }
 
-// Add time slot to a day
 const addTimeSlot = (
   day: WeekDay,
-  values: any,
-  setFieldValue: (field: string, value: any) => void,
-) => {
-  const dayIndex = values.schedules.findIndex((schedule: any) => schedule.day === day)
+  values: FormValues,
+  setFieldValue: (field: string, value: unknown) => void,
+): void => {
+  const dayIndex = values.schedules.findIndex((schedule) => schedule.day === day)
   if (dayIndex !== -1 && values.schedules[dayIndex].time_slots.length < 3) {
     const updatedSchedules = [...values.schedules]
     updatedSchedules[dayIndex] = {
@@ -417,31 +491,38 @@ const addTimeSlot = (
   }
 }
 
-// Remove time slot from a day
 const removeTimeSlot = (
   day: WeekDay,
   index: number,
-  values: any,
-  setFieldValue: (field: string, value: any) => void,
-) => {
-  const dayIndex = values.schedules.findIndex((schedule: any) => schedule.day === day)
+  values: FormValues,
+  setFieldValue: (field: string, value: unknown) => void,
+): void => {
+  const dayIndex = values.schedules.findIndex((schedule) => schedule.day === day)
   if (dayIndex !== -1 && values.schedules[dayIndex].time_slots.length > 1) {
     const updatedSchedules = [...values.schedules]
     updatedSchedules[dayIndex] = {
       ...updatedSchedules[dayIndex],
-      time_slots: updatedSchedules[dayIndex].time_slots.filter((_: any, i: number) => i !== index),
+      time_slots: updatedSchedules[dayIndex].time_slots.filter((_, i) => i !== index),
     }
     setFieldValue('schedules', updatedSchedules)
   }
 }
 
-// Apply Saturday's time slots to all days
-const applySaturdayToAll = (values: any, setFieldValue: (field: string, value: any) => void) => {
-  const saturdaySchedule = values.schedules.find((schedule: any) => schedule.day === 'saturday')
+const applySaturdayToAll = (
+  values: FormValues,
+  setFieldValue: (field: string, value: unknown) => void,
+): void => {
+  openConfirmation('applySaturdayToAll', { values, setFieldValue })
+}
+const applySaturdaySchedule = (
+  values: FormValues,
+  setFieldValue: (field: string, value: unknown) => void,
+): void => {
+  const saturdaySchedule = values.schedules.find((schedule) => schedule.day === 'saturday')
   if (saturdaySchedule) {
-    const updatedSchedules = values.schedules.map((schedule: any) => ({
+    const updatedSchedules = values.schedules.map((schedule) => ({
       ...schedule,
-      time_slots: saturdaySchedule.time_slots.map((slot: any) => ({
+      time_slots: saturdaySchedule.time_slots.map((slot) => ({
         ...slot,
         id: generateId(),
       })),
@@ -449,19 +530,17 @@ const applySaturdayToAll = (values: any, setFieldValue: (field: string, value: a
     setFieldValue('schedules', updatedSchedules)
   }
 }
-
-// Handle form submission
-const handleSubmit = async (values: any) => {
+const handleSubmit = async (values: FormValues): Promise<void> => {
   try {
-    console.log('Submitting form with values:', values)
-
-    // Convert schedules array to reservation_times object
-    const reservation_times: Record<string, [string, string][]> = {}
+    const reservation_times: Record<WeekDay, [string, string][]> = {} as Record<
+      WeekDay,
+      [string, string][]
+    >
 
     if (values.schedules && Array.isArray(values.schedules)) {
-      values.schedules.forEach((schedule: any) => {
+      values.schedules.forEach((schedule) => {
         if (schedule.day && schedule.time_slots && Array.isArray(schedule.time_slots)) {
-          reservation_times[schedule.day] = schedule.time_slots.map((slot: any) => [
+          reservation_times[schedule.day] = schedule.time_slots.map((slot) => [
             slot.start_time,
             slot.end_time,
           ])
@@ -469,32 +548,25 @@ const handleSubmit = async (values: any) => {
       })
     }
 
-    const apiData: ReservationSettings = {
+    const apiData = {
       reservation_duration: values.reservation_duration,
       enabled_tables: values.enabled_tables || [],
-      schedules: values.schedules, // Keep for internal use
+      // schedules: values.schedules,
+      reservation_times,
     }
 
-    // Add the API-formatted reservation_times
-    const apiDataWithTimes = {
-      ...apiData,
-      reservation_times, // ✅ Correct API format!
-    }
-
-    emit('save', apiDataWithTimes)
+    emit('save', apiData)
     close()
   } catch (error) {
     console.error('Error saving reservation settings:', error)
   }
 }
 
-// Close modal
-const close = () => {
+const close = (): void => {
   isOpen.value = false
 }
 
-// Handle modal close
-const handleClose = () => {
+const handleClose = (): void => {
   close()
 }
 </script>
