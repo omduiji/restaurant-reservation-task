@@ -2,7 +2,6 @@
   <div
     class="time-slot-input flex items-center gap-4 p-3 bg-gray-50 rounded-lg border border-gray-200 justify-start"
   >
-    <!-- Start Time -->
     <div class="">
       <p class="block text-sm font-medium text-gray-700 mb-2">Start Time</p>
       <TimeInput
@@ -12,12 +11,10 @@
       />
     </div>
 
-    <!-- Separator -->
     <div class="flex items-center pt-6">
       <span class="text-gray-500 font-medium text-lg">-</span>
     </div>
 
-    <!-- End Time -->
     <div class="">
       <p class="block text-sm font-medium text-gray-700 mb-2">End Time</p>
       <TimeInput
@@ -27,7 +24,6 @@
       />
     </div>
 
-    <!-- Actions -->
     <div class="flex items-center gap-1 pt-6">
       <AppButton
         v-if="canRemove"

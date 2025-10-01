@@ -29,7 +29,6 @@
             </div>
           </div>
 
-          <!-- Action buttons for mobile -->
           <div
             v-if="props.actions && props.actions.length > 0"
             class="flex gap-2 pt-2 mt-2 border-t border-gray-100"
@@ -49,7 +48,6 @@
       </div>
     </div>
 
-    <!-- Desktop View -->
     <div class="desktop-table hidden md:block overflow-x-auto">
       <table class="w-full bg-white rounded-lg overflow-hidden">
         <thead>
@@ -108,7 +106,6 @@
       </table>
     </div>
 
-    <!-- Empty State -->
     <div v-if="props.data.length === 0" class="text-center py-12 text-gray-500">
       <slot name="empty"> No data available </slot>
     </div>
@@ -116,12 +113,10 @@
 </template>
 
 <script setup lang="ts">
-// Base types for generic constraints
 interface BaseItem extends Record<string, unknown> {
   id?: string | number
 }
 
-// Types
 export interface TableColumn {
   key: string
   label: string
@@ -144,17 +139,14 @@ export interface TableProps<T = BaseItem> {
   keyField?: string
 }
 
-// Props
 const props = defineProps<TableProps>()
 console.log(props)
 
-// Emits
 const emit = defineEmits<{
   rowClick: [item: BaseItem]
   actionClick: [action: TableAction<BaseItem>, item: BaseItem]
 }>()
 
-// Methods
 const getKey = (item: BaseItem, index: number): string | number => {
   const key = props.keyField && props.keyField in item ? item[props.keyField] : undefined
   const keyValue = key as string | number | undefined

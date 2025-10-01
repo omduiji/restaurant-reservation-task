@@ -145,23 +145,16 @@ defineExpose({ open, close })
   width: fit-content;
   min-width: 400px;
   background: white;
-
-  /* Enhanced centering */
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   margin: 0;
-
-  /* Prevent any external margins affecting centering */
   display: flex;
   flex-direction: column;
-
-  /* Ensure it stays above other content */
   z-index: 1000;
 }
 
-/* For very small screens - improved responsive behavior */
 @media (max-height: 600px) {
   .popup-dialog {
     max-height: 95vh;
@@ -190,7 +183,6 @@ defineExpose({ open, close })
   flex-direction: column;
   height: 100%;
   max-height: 100%;
-  /* Prevent content from affecting centering */
   margin: 0;
 }
 
@@ -201,7 +193,6 @@ defineExpose({ open, close })
   padding: 1rem 1.5rem;
   border-bottom: 1px solid #e5e7eb;
   flex-shrink: 0;
-  /* Prevent header from affecting centering */
   margin: 0;
 }
 
@@ -239,10 +230,8 @@ defineExpose({ open, close })
   flex: 1;
   overflow-y: auto;
   min-height: 0;
-  /* Add some top/bottom padding for better spacing */
   padding-top: 1rem;
   padding-bottom: 1rem;
-  /* Prevent body from affecting centering */
   margin: 0;
 }
 
@@ -253,16 +242,13 @@ defineExpose({ open, close })
   justify-content: flex-end;
   gap: 0.75rem;
   flex-shrink: 0;
-  /* Prevent footer from affecting centering */
   margin: 0;
 }
 
-/* Ensure no scrollbars affect centering */
 .popup-dialog:focus {
   outline: none;
 }
 
-/* Prevent body scroll when modal is open */
 body:has(.popup-dialog[open]) {
   overflow: hidden;
 }

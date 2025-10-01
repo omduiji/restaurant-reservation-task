@@ -77,19 +77,16 @@ const emit = defineEmits<Emits>()
 const isOpen = ref(props.modelValue)
 const selectedBranchIds = ref<Array<string | number>>([])
 
-// Watch for external changes to modelValue
 watch(
   () => props.modelValue,
   (newValue) => {
     isOpen.value = newValue
     if (!newValue) {
-      // Reset selection when modal closes
       selectedBranchIds.value = []
     }
   },
 )
 
-// Watch for internal changes to isOpen
 watch(isOpen, (newValue) => {
   emit('update:modelValue', newValue)
   if (!newValue) {
@@ -97,7 +94,6 @@ watch(isOpen, (newValue) => {
   }
 })
 
-// Compute options for the select input
 const branchOptions = computed(() => {
   return props.disabledBranches.map((branch) => ({
     value: branch.id,
@@ -115,7 +111,6 @@ const handleSubmit = () => {
     return
   }
 
-  // Convert to string array and emit
   const branchIds = selectedBranchIds.value.map((id) => id.toString())
   emit('submit', branchIds)
 }

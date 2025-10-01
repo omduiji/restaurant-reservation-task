@@ -5,7 +5,6 @@
     </label>
 
     <Field :name="fieldName" :rules="validationRules" v-slot="{ field, errors, meta }">
-      <!-- Selected Tags (for multiple select) -->
       <div
         v-if="multiple && Array.isArray(field.value) && field.value.length > 0"
         class="flex flex-wrap gap-2 mb-3 p-3 bg-gray-50 rounded-lg border border-gray-200"
@@ -38,7 +37,6 @@
         </div>
       </div>
 
-      <!-- Single Select -->
       <select
         v-if="!multiple"
         v-bind="field"
@@ -54,7 +52,6 @@
         </option>
       </select>
 
-      <!-- Multiple Select Dropdown -->
       <select
         v-else
         :id="id"
@@ -90,6 +87,7 @@
   </div>
 </template>
 <script setup lang="ts">
+import { generateId } from '@/utils'
 import { Field } from 'vee-validate'
 import { computed } from 'vue'
 
@@ -126,14 +124,12 @@ const emit = defineEmits<{
   change: [value: string | number | Array<string | number> | undefined]
 }>()
 
-const id = computed(() => `select-input-${Math.random().toString(36).substr(2, 9)}`)
+const id = computed(() => `select-input-${generateId()}`)
 
-// Ensure we always have a valid name for the Field component
 const fieldName = computed(() => {
   return props.validationName || props.label || id.value
 })
 
-// Get selected items as objects (for tags display)
 const getSelectedItems = (fieldValue: any) => {
   if (!props.multiple || !Array.isArray(fieldValue)) {
     return []
@@ -144,7 +140,6 @@ const getSelectedItems = (fieldValue: any) => {
     .filter((item): item is Option => item !== undefined)
 }
 
-// Get available options (exclude already selected ones for multiple select)
 const getAvailableOptions = (fieldValue: any) => {
   if (!props.multiple || !Array.isArray(fieldValue) || fieldValue.length === 0) {
     return props.options
@@ -179,42 +174,34 @@ const getOptionKey = (value: string | number): string => {
   return `option-${value.toString()}`
 }
 
-// Handle multiple select change (add item)
 const handleMultipleChange = (event: Event, field: any) => {
   const selectElement = event.target as HTMLSelectElement
   const selectedValue = selectElement.value
 
   if (!selectedValue || selectedValue === '') return
 
-  // Find the original option
   const originalOption = props.options.find((opt) => opt.value.toString() === selectedValue)
   if (!originalOption) return
 
-  // Add to existing selection
   const currentValue = Array.isArray(field.value) ? [...field.value] : []
 
-  // Check if already selected
   if (!currentValue.some((val) => val.toString() === originalOption.value.toString())) {
     currentValue.push(originalOption.value)
   }
 
-  // Reset select to placeholder
   selectElement.value = ''
 
-  // Update field value
   field.onChange(currentValue)
 
   emit('update:modelValue', currentValue)
   emit('change', currentValue)
 }
 
-// Remove item from selection
 const removeItem = (value: string | number, field: any) => {
   if (!Array.isArray(field.value)) return
 
   const newValue = field.value.filter((val: any) => val.toString() !== value.toString())
 
-  // Update field value
   field.onChange(newValue)
 
   emit('update:modelValue', newValue)

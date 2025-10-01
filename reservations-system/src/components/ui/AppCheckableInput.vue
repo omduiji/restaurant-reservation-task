@@ -24,7 +24,6 @@
       </label>
     </div>
 
-    <!-- Error Message -->
     <ErrorMessage :name="fieldName" class="text-red-500 block mt-1 text-sm" />
   </div>
 </template>
@@ -59,7 +58,6 @@ const emit = defineEmits<{
 
 const id = computed(() => `checkable-input-${Math.random().toString(36).substr(2, 9)}`)
 
-// Ensure we always have a valid name for the Field component
 const fieldName = computed(() => {
   return props.validationName || props.label || id.value
 })
@@ -81,12 +79,10 @@ const inputValue = computed(() => props.value)
 const handleFieldChange = (event: Event, fieldOnChange?: (e: Event) => void) => {
   const target = event.target as HTMLInputElement
 
-  // Call vee-validate's onChange handler
   if (fieldOnChange) {
     fieldOnChange(event)
   }
 
-  // Handle your custom logic
   if (props.type === 'radio') {
     emit('update:modelValue', props.value)
     emit('change', props.value)

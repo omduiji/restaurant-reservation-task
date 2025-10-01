@@ -8,7 +8,6 @@
     @close="handleClose"
     @cancel="handleCancel"
   >
-    <!-- Header Slot with default -->
     <template #header>
       <slot name="header">
         <div class="confirmation-header">
@@ -22,7 +21,6 @@
       </slot>
     </template>
 
-    <!-- Main Content -->
     <div class="confirmation-content" :class="contentClass">
       <slot name="message">
         <div class="confirmation-message" v-if="message">
@@ -39,7 +37,6 @@
       </div>
     </div>
 
-    <!-- Footer Slot with default actions -->
     <template #footer>
       <slot name="footer">
         <div class="confirmation-actions" :class="actionsAlignment">
@@ -143,7 +140,6 @@ const emit = defineEmits<ConfirmationModalEmits>()
 
 const isOpen = ref(false)
 
-// Watchers
 watch(
   () => props.modelValue,
   (newVal) => {
@@ -158,7 +154,6 @@ watch(
   },
 )
 
-// Computed
 const confirmButtonVariant = computed(() => {
   const variantMap: Record<Variant, 'primary' | 'danger' | 'secondary'> = {
     default: 'primary',
@@ -187,7 +182,6 @@ const defaultIcon = computed(() => {
 
 const icon = computed(() => props.icon || defaultIcon.value)
 
-// Event handlers
 const handleConfirmClick = () => {
   emit('confirm')
   if (props.closeOnConfirm) {
@@ -211,7 +205,6 @@ const handleCancel = () => {
   emit('cancel')
 }
 
-// Expose methods
 const open = () => {
   isOpen.value = true
 }

@@ -50,13 +50,11 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<Emits>()
 
-// Reactive inputs for hours and minutes
 const hoursInput = ref('09')
 const minutesInput = ref('00')
 const hoursInputRef = ref<HTMLInputElement | null>(null)
 const minutesInputRef = ref<HTMLInputElement | null>(null)
 
-// Parse current time value and initialize inputs
 const initializeFromValue = (timeValue: string) => {
   if (!timeValue) {
     hoursInput.value = '09'
@@ -69,7 +67,6 @@ const initializeFromValue = (timeValue: string) => {
   minutesInput.value = minutesStr || '00'
 }
 
-// Watch for external modelValue changes
 watch(
   () => props.modelValue,
   (newValue) => {
@@ -78,7 +75,6 @@ watch(
   { immediate: true },
 )
 
-// Format hours to 2-digit with leading zero
 const formatHours = () => {
   if (!hoursInput.value) {
     hoursInput.value = '09'
@@ -96,7 +92,6 @@ const formatHours = () => {
   updateTime()
 }
 
-// Format minutes to 2-digit with leading zero
 const formatMinutes = () => {
   if (!minutesInput.value) {
     minutesInput.value = '00'
@@ -114,25 +109,19 @@ const formatMinutes = () => {
   updateTime()
 }
 
-// Handle hours input change
 const handleHoursChange = () => {
   const strValue = String(hoursInput.value || '')
 
-  // Only allow numbers
   const numericValue = strValue.replace(/[^\d]/g, '')
 
-  // Limit to 2 digits max
   const limitedValue = numericValue.slice(0, 2)
 
-  // Validate the value
   if (limitedValue === '' || /^\d{1,2}$/.test(limitedValue)) {
     const numValue = parseInt(limitedValue, 10)
 
-    // Check if the value is within valid range
     if (isNaN(numValue) || (numValue >= 0 && numValue <= 23)) {
       hoursInput.value = limitedValue
 
-      // Auto-format if user entered 2 digits
       if (limitedValue.length === 2) {
         nextTick(() => {
           formatHours()
@@ -143,25 +132,19 @@ const handleHoursChange = () => {
   updateTime()
 }
 
-// Handle minutes input change
 const handleMinutesChange = () => {
   const strValue = String(minutesInput.value || '')
 
-  // Only allow numbers
   const numericValue = strValue.replace(/[^\d]/g, '')
 
-  // Limit to 2 digits max
   const limitedValue = numericValue.slice(0, 2)
 
-  // Validate the value
   if (limitedValue === '' || /^\d{1,2}$/.test(limitedValue)) {
     const numValue = parseInt(limitedValue, 10)
 
-    // Check if the value is within valid range
     if (isNaN(numValue) || (numValue >= 0 && numValue <= 59)) {
       minutesInput.value = limitedValue
 
-      // Auto-format if user entered 2 digits
       if (limitedValue.length === 2) {
         nextTick(() => {
           formatMinutes()
@@ -172,12 +155,10 @@ const handleMinutesChange = () => {
   updateTime()
 }
 
-// Update the complete time value
 const updateTime = () => {
   const hours = hoursInput.value.padStart(2, '0')
   const minutes = minutesInput.value.padStart(2, '0')
 
-  // Validate final values
   const hoursNum = parseInt(hours, 10)
   const minutesNum = parseInt(minutes, 10)
 
@@ -185,14 +166,12 @@ const updateTime = () => {
     const formattedTime = `${hours}:${minutes}`
     emit('update:modelValue', formattedTime)
   } else {
-    // Reset to default if invalid
     hoursInput.value = '09'
     minutesInput.value = '00'
     emit('update:modelValue', '09:00')
   }
 }
 
-// Additional safety: validate on changes
 watch([hoursInput, minutesInput], () => {
   const hoursNum = parseInt(hoursInput.value, 10)
   const minutesNum = parseInt(minutesInput.value, 10)

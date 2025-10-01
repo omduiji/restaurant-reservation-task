@@ -40,7 +40,7 @@ export function useApi() {
 
     try {
       await Promise.all(branchIds.map((id) => apiEnableReservations(id)))
-      await fetchBranches() // Refresh data
+      await fetchBranches()
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to enable reservations'
     } finally {
@@ -55,7 +55,7 @@ export function useApi() {
     try {
       const enabledIds = enabledBranches.value.map((branch) => branch.id)
       await apiDisableAllReservations(enabledIds)
-      await fetchBranches() // Refresh data
+      await fetchBranches()
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to disable reservations'
     } finally {
@@ -69,7 +69,7 @@ export function useApi() {
 
     try {
       await apiUpdateBranch(branchId, settings)
-      await fetchBranches() // Refresh data
+      await fetchBranches()
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to update branch settings'
     } finally {

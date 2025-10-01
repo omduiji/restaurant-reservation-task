@@ -73,7 +73,7 @@ export function useConfirmationModal() {
     confirmationState.modalTitle = title
     confirmationState.modalMessage = message
     confirmationState.confirmText = 'OK'
-    confirmationState.cancelText = '' // No cancel button for results
+    confirmationState.cancelText = ''
     confirmationState.variant = variant
     confirmationState.loading = false
     confirmationState.show = true
@@ -81,14 +81,12 @@ export function useConfirmationModal() {
 
   const handleConfirm = async () => {
     if (confirmationState.mode === 'result') {
-      // For result modals, just close them
       confirmationState.show = false
       confirmationState.type = ''
       confirmationState.data = null
       return
     }
 
-    // For confirmation modals, execute the action
     const config = confirmationConfigs.value[confirmationState.type]
     if (!config) return
 
@@ -97,7 +95,6 @@ export function useConfirmationModal() {
     try {
       await config.onConfirm(confirmationState.data)
 
-      // Show success result
       const successMessage =
         typeof config.successMessage === 'function'
           ? config.successMessage(confirmationState.data)
@@ -106,7 +103,6 @@ export function useConfirmationModal() {
       if (successMessage) {
         showResult('Success!', successMessage, 'success')
       } else {
-        // If no success message, just close the modal
         confirmationState.show = false
         confirmationState.type = ''
         confirmationState.data = null
@@ -114,7 +110,6 @@ export function useConfirmationModal() {
     } catch (err) {
       console.error(`Failed to execute ${confirmationState.type}:`, err)
 
-      // Show error result
       const errorMessage =
         typeof config.errorMessage === 'function'
           ? config.errorMessage(confirmationState.data)
@@ -137,7 +132,7 @@ export function useConfirmationModal() {
     confirmationState.show = false
     confirmationState.type = ''
     confirmationState.data = null
-    confirmationState.mode = 'confirmation' // Reset to default mode
+    confirmationState.mode = 'confirmation'
   }
 
   return {

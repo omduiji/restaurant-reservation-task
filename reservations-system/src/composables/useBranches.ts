@@ -9,7 +9,6 @@ export function useBranches() {
   const error = ref<string | null>(null)
   const { isLoading, withLoader } = useLoader()
 
-  // Computed properties
   const enabledBranches = computed(() =>
     branches.value
       .filter((branch) => branch.accepts_reservations)
@@ -23,14 +22,12 @@ export function useBranches() {
     branches.value.filter((branch) => !branch.accepts_reservations),
   )
 
-  // Helper function to count enabled tables in a branch
   const getEnabledTablesCount = (branch: Branch): number => {
     return branch.sections.reduce((count, section) => {
       return count + section.tables.filter((table) => table.accepts_reservations).length
     }, 0)
   }
 
-  // Fetch all branches
   const fetchBranches = async () => {
     loading.value = true
     error.value = null
@@ -48,7 +45,6 @@ export function useBranches() {
     }
   }
 
-  // Fetch single branch by ID
   const fetchBranch = async (id: string) => {
     loading.value = true
     error.value = null
@@ -72,7 +68,6 @@ export function useBranches() {
     }
   }
 
-  // Enable reservations for selected branches
   const enableReservations = async (branchIds: string[]) => {
     loading.value = true
     error.value = null
@@ -80,7 +75,7 @@ export function useBranches() {
     try {
       await withLoader(async () => {
         await Promise.all(branchIds.map((id) => api.enableReservations(id)))
-        await fetchBranches() // Refresh data
+        await fetchBranches()
       })
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to enable reservations'
@@ -91,7 +86,6 @@ export function useBranches() {
     }
   }
 
-  // Disable reservations for all enabled branches
   const disableAllReservations = async () => {
     loading.value = true
     error.value = null
@@ -103,7 +97,7 @@ export function useBranches() {
           return
         }
         await api.disableAllReservations(enabledIds)
-        await fetchBranches() // Refresh data
+        await fetchBranches()
       })
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to disable reservations'
@@ -113,7 +107,6 @@ export function useBranches() {
       loading.value = false
     }
   }
-  // Disable reservations for all enabled single branch
   const disableReservationForBranch = async (id: string) => {
     loading.value = true
     error.value = null
@@ -123,7 +116,7 @@ export function useBranches() {
         return
       }
       await api.disableReservations(id)
-      await fetchBranches() // Refresh data
+      await fetchBranches()
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to disable reservations'
       console.error('Error disabling reservations for branch:', err)
@@ -133,7 +126,6 @@ export function useBranches() {
     }
   }
 
-  // Update branch settings (reservation duration, tables, schedules)
   const updateBranchSettings = async (branchId: string, settings: Partial<Branch>) => {
     loading.value = true
     error.value = null
@@ -150,7 +142,6 @@ export function useBranches() {
     }
   }
 
-  // Clear error message
   const clearError = () => {
     error.value = null
   }

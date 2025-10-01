@@ -5,7 +5,6 @@
     :class="[containerClass, { 'fixed inset-0 bg-white/90 backdrop-blur-sm': overlay }]"
   >
     <div class="flex flex-col items-center justify-center h-full">
-      <!-- Changed this line -->
       <div class="loader" :class="[sizeClass, variantClass]"></div>
       <p v-if="text" class="loader-text mt-4" :class="textClass">
         {{ text }}
@@ -59,7 +58,6 @@ const variantClass = computed(() => {
   justify-content: center;
 }
 
-/* Ensure fixed overlay takes full viewport */
 .fixed {
   position: fixed;
   top: 0;
@@ -68,7 +66,6 @@ const variantClass = computed(() => {
   bottom: 0;
 }
 
-/* Spinner Loader */
 .loader-spinner {
   border-color: #e5e7eb;
   border-top-color: #440099;
@@ -77,9 +74,6 @@ const variantClass = computed(() => {
   animation: spin 0.8s linear infinite;
 }
 
-/* Spinner Loader */
-
-/* Dots Loader */
 .loader-dots {
   position: relative;
   display: flex;
@@ -116,7 +110,6 @@ const variantClass = computed(() => {
   animation-delay: -0.16s;
 }
 
-/* Pulse Loader */
 .loader-pulse {
   background-color: #440099;
   border-radius: 50%;
@@ -158,7 +151,6 @@ const variantClass = computed(() => {
   }
 }
 
-/* Size adjustments for dots */
 .loader-dots.w-8 {
   width: 8px;
   height: 8px;

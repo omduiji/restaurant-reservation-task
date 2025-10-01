@@ -74,7 +74,6 @@ defineEmits<{
 
 const id = computed(() => `text-input-${Math.random().toString(36).substr(2, 9)}`)
 
-// Ensure we always have a valid name for the Field component
 const fieldName = computed(() => {
   return props.validationName || props.label || id.value
 })
