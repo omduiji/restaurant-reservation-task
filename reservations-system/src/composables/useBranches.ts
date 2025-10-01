@@ -1,169 +1,51 @@
-import { computed, ref } from 'vue'
-import * as api from '../services/api'
-import type { Branch } from '../types'
-import { useLoader } from './useLoader'
+import { useBranchesComputed } from './useBranchComputed'
+import { useBranchesApi } from './useBranchesApi'
+import { useBranchReservations } from './useBranchReservations'
+import { useBranchSettings } from './useBranchSettings'
+import { useBranchesState } from './useBranchState'
 
 export function useBranches() {
-  const branches = ref<Branch[]>([])
-  const loading = ref(false)
-  const error = ref<string | null>(null)
-  const { isLoading, withLoader } = useLoader()
+  const state = useBranchesState()
+  const computed = useBranchesComputed(state.branches)
 
-  const enabledBranches = computed(() =>
-    branches.value
-      .filter((branch) => branch.accepts_reservations)
-      .map((branch) => ({
-        ...branch,
-        number_of_reservable_tables: getEnabledTablesCount(branch),
-      })),
-  )
+  const api = useBranchesApi({
+    loading: state.loading,
+    error: state.error,
+    onBranchesUpdate: state.setBranches,
+    onBranchUpdate: state.updateBranch,
+  })
 
-  const disabledBranches = computed(() =>
-    branches.value.filter((branch) => !branch.accepts_reservations),
-  )
+  const reservations = useBranchReservations({
+    loading: state.loading,
+    error: state.error,
+    enabledBranches: computed.enabledBranches,
+    onUpdate: api.fetchBranches,
+  })
 
-  const getEnabledTablesCount = (branch: Branch): number => {
-    return branch.sections.reduce((count, section) => {
-      return count + section.tables.filter((table) => table.accepts_reservations).length
-    }, 0)
-  }
-
-  const fetchBranches = async () => {
-    loading.value = true
-    error.value = null
-
-    try {
-      await withLoader(async () => {
-        const response = await api.getBranches()
-        branches.value = response.data
-      })
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to fetch branches'
-      console.error('Error fetching branches:', err)
-    } finally {
-      loading.value = false
-    }
-  }
-
-  const fetchBranch = async (id: string) => {
-    loading.value = true
-    error.value = null
-
-    try {
-      return await withLoader(async () => {
-        const response = await api.getBranch(id)
-        // Update the branch in the list if it exists
-        const index = branches.value.findIndex((b) => b.id === id)
-        if (index !== -1) {
-          branches.value[index] = response.data
-        }
-        return response.data
-      })
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to fetch branch'
-      console.error('Error fetching branch:', err)
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  const enableReservations = async (branchIds: string[]) => {
-    loading.value = true
-    error.value = null
-
-    try {
-      await withLoader(async () => {
-        await Promise.all(branchIds.map((id) => api.enableReservations(id)))
-        await fetchBranches()
-      })
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to enable reservations'
-      console.error('Error enabling reservations:', err)
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  const disableAllReservations = async () => {
-    loading.value = true
-    error.value = null
-
-    try {
-      await withLoader(async () => {
-        const enabledIds = enabledBranches.value.map((branch) => branch.id)
-        if (enabledIds.length === 0) {
-          return
-        }
-        await api.disableAllReservations(enabledIds)
-        await fetchBranches()
-      })
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to disable reservations'
-      console.error('Error disabling all reservations:', err)
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-  const disableReservationForBranch = async (id: string) => {
-    loading.value = true
-    error.value = null
-
-    try {
-      if (id.length === 0) {
-        return
-      }
-      await api.disableReservations(id)
-      await fetchBranches()
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to disable reservations'
-      console.error('Error disabling reservations for branch:', err)
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  const updateBranchSettings = async (branchId: string, settings: Partial<Branch>) => {
-    loading.value = true
-    error.value = null
-
-    try {
-      await api.updateBranch(branchId, settings)
-      await fetchBranches()
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to update branch settings'
-      console.error('Error updating branch settings:', err)
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  const clearError = () => {
-    error.value = null
-  }
+  const settings = useBranchSettings({
+    loading: state.loading,
+    error: state.error,
+    onUpdate: api.fetchBranches,
+  })
 
   return {
     // State
-    branches,
-    enabledBranches,
-    disabledBranches,
-    loading: isLoading,
-    error,
+    branches: state.branches,
+    enabledBranches: computed.enabledBranches,
+    disabledBranches: computed.disabledBranches,
+    loading: api.loading,
+    error: state.error,
 
     // Actions
-    fetchBranches,
-    fetchBranch,
-    enableReservations,
-    disableReservationForBranch,
-    disableAllReservations,
-    updateBranchSettings,
-    clearError,
+    fetchBranches: api.fetchBranches,
+    fetchBranch: api.fetchBranch,
+    enableReservations: reservations.enableReservations,
+    disableReservationForBranch: reservations.disableReservationForBranch,
+    disableAllReservations: reservations.disableAllReservations,
+    updateBranchSettings: settings.updateBranchSettings,
+    clearError: state.clearError,
 
     // Helpers
-    getEnabledTablesCount,
+    getEnabledTablesCount: computed.getEnabledTablesCount,
   }
 }

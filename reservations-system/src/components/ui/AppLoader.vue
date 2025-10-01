@@ -5,7 +5,15 @@
     :class="[containerClass, { 'fixed inset-0 bg-white/90 backdrop-blur-sm': overlay }]"
   >
     <div class="flex flex-col items-center justify-center h-full">
-      <div class="loader" :class="[sizeClass, variantClass]"></div>
+      <div
+        class="loader"
+        :class="{
+          'w-8 h-8 border-2': props.size === 'small',
+          'w-12 h-12 border-3': props.size === 'medium',
+          'w-16 h-16 border-4': props.size === 'large',
+          [variantClass]: true,
+        }"
+      ></div>
       <p v-if="text" class="loader-text mt-4" :class="textClass">
         {{ text }}
       </p>
@@ -34,15 +42,6 @@ const props = withDefaults(defineProps<LoaderProps>(), {
   text: '',
   containerClass: '',
   textClass: 'text-gray-600 text-sm',
-})
-
-const sizeClass = computed(() => {
-  const sizes = {
-    small: 'w-8 h-8 border-2',
-    medium: 'w-12 h-12 border-3',
-    large: 'w-16 h-16 border-4',
-  }
-  return sizes[props.size]
 })
 
 const variantClass = computed(() => {

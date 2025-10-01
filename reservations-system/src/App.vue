@@ -111,7 +111,6 @@ registerConfirmation('disableSingleBranch', {
     `Reservations for ${branch.name} have been successfully disabled.`,
   errorMessage: 'Failed to disable reservations for this branch. Please try again.',
   onConfirm: async (branch: Branch) => {
-    console.log('Disabling branch:', branch.name)
     await disableReservationForBranch(branch.id)
     await fetchBranches()
   },

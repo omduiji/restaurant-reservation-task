@@ -42,7 +42,16 @@
         v-bind="field"
         :id="id"
         :disabled="disabled"
-        :class="selectClasses(meta.valid, errors)"
+        :class="[
+          'w-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 rounded-lg border p-2',
+          errors.length
+            ? 'border-red-500 focus:ring-red-500'
+            : meta.valid
+              ? 'border-green-500 focus:ring-green-500'
+              : 'border-gray-300 focus:ring-primary-500',
+          props.inputClass,
+          props.disabled ? 'opacity-50 cursor-not-allowed bg-gray-100' : 'bg-white',
+        ]"
       >
         <option v-if="placeholder" value="" disabled>
           {{ placeholder }}
@@ -56,7 +65,16 @@
         v-else
         :id="id"
         :disabled="disabled"
-        :class="selectClasses(meta.valid, errors)"
+        :class="[
+          'w-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 rounded-lg border p-2',
+          errors.length
+            ? 'border-red-500 focus:ring-red-500'
+            : meta.valid
+              ? 'border-green-500 focus:ring-green-500'
+              : 'border-gray-300 focus:ring-primary-500',
+          props.inputClass,
+          props.disabled ? 'opacity-50 cursor-not-allowed bg-gray-100' : 'bg-white',
+        ]"
         @change="handleMultipleChange($event, field)"
         :value="''"
       >
@@ -88,6 +106,7 @@
 </template>
 <script setup lang="ts">
 import { generateId } from '@/utils'
+import type { FieldContext } from 'vee-validate'
 import { Field } from 'vee-validate'
 import { computed } from 'vue'
 
@@ -130,7 +149,7 @@ const fieldName = computed(() => {
   return props.validationName || props.label || id.value
 })
 
-const getSelectedItems = (fieldValue: any) => {
+const getSelectedItems = (fieldValue: unknown) => {
   if (!props.multiple || !Array.isArray(fieldValue)) {
     return []
   }
@@ -140,41 +159,21 @@ const getSelectedItems = (fieldValue: any) => {
     .filter((item): item is Option => item !== undefined)
 }
 
-const getAvailableOptions = (fieldValue: any) => {
+const getAvailableOptions = (fieldValue: unknown) => {
   if (!props.multiple || !Array.isArray(fieldValue) || fieldValue.length === 0) {
     return props.options
   }
 
   return props.options.filter(
-    (option) => !fieldValue.some((val: any) => val.toString() === option.value.toString()),
+    (option) => !fieldValue.some((val: unknown) => val?.toString() === option.value.toString()),
   )
-}
-
-const selectClasses = (valid: boolean, errors: string[]) => {
-  const baseClasses =
-    'w-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 rounded-lg border'
-  const stateClasses = errors.length
-    ? 'border-red-500 focus:ring-red-500'
-    : valid
-      ? 'border-green-500 focus:ring-green-500'
-      : 'border-gray-300 focus:ring-primary-500'
-
-  const sizeClasses = 'p-2'
-
-  return [
-    baseClasses,
-    stateClasses,
-    sizeClasses,
-    props.inputClass,
-    props.disabled ? 'opacity-50 cursor-not-allowed bg-gray-100' : 'bg-white',
-  ].join(' ')
 }
 
 const getOptionKey = (value: string | number): string => {
   return `option-${value.toString()}`
 }
 
-const handleMultipleChange = (event: Event, field: any) => {
+const handleMultipleChange = (event: Event, field: FieldContext<unknown>) => {
   const selectElement = event.target as HTMLSelectElement
   const selectedValue = selectElement.value
 
@@ -183,7 +182,7 @@ const handleMultipleChange = (event: Event, field: any) => {
   const originalOption = props.options.find((opt) => opt.value.toString() === selectedValue)
   if (!originalOption) return
 
-  const currentValue = Array.isArray(field.value) ? [...field.value] : []
+  const currentValue = Array.isArray(field?.value) ? [...field?.value] : []
 
   if (!currentValue.some((val) => val.toString() === originalOption.value.toString())) {
     currentValue.push(originalOption.value)
@@ -197,10 +196,12 @@ const handleMultipleChange = (event: Event, field: any) => {
   emit('change', currentValue)
 }
 
-const removeItem = (value: string | number, field: any) => {
+const removeItem = (value: string | number, field: FieldContext<unknown>) => {
   if (!Array.isArray(field.value)) return
 
-  const newValue = field.value.filter((val: any) => val.toString() !== value.toString())
+  const newValue = field.value.filter(
+    (val: FieldContext<unknown>) => val.toString() !== value.toString(),
+  )
 
   field.onChange(newValue)
 
