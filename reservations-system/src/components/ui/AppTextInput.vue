@@ -4,7 +4,11 @@
       {{ label }}
     </label>
 
-    <Field :name="fieldName" :rules="validationRules" v-slot="{ field, errors, meta }">
+    <Field
+      :name="fieldName"
+      :rules="validationRules"
+      v-slot="{ field, errors, meta, handleChange, handleBlur }"
+    >
       <input
         v-if="type !== 'textarea'"
         v-bind="field"
@@ -16,6 +20,8 @@
         :min="min"
         :max="max"
         :class="inputClasses(meta.valid, errors)"
+        @input="(e) => handleInput(e, handleChange)"
+        @blur="(e) => handleBlurEvent(e, handleBlur)"
       />
 
       <textarea
@@ -26,6 +32,8 @@
         :rows="rows"
         :disabled="disabled"
         :class="inputClasses(meta.valid, errors)"
+        @input="(e) => handleInput(e, handleChange)"
+        @blur="(e) => handleBlurEvent(e, handleBlur)"
       />
 
       <span v-if="errors.length" class="text-red-500 block mt-1 text-sm">
@@ -66,10 +74,11 @@ const props = withDefaults(defineProps<Props>(), {
   rows: 3,
 })
 
-defineEmits<{
+const emit = defineEmits<{
   'update:modelValue': [value: string | number | undefined]
   change: [value: string | number | undefined]
   blur: [event: Event]
+  input: [event: Event]
 }>()
 
 const id = computed(() => `text-input-${Math.random().toString(36).substr(2, 9)}`)
@@ -77,6 +86,26 @@ const id = computed(() => `text-input-${Math.random().toString(36).substr(2, 9)}
 const fieldName = computed(() => {
   return props.validationName || props.label || id.value
 })
+
+// Handle input events
+const handleInput = (event: Event, veeValidateHandleChange: (e: Event) => void) => {
+  const target = event.target as HTMLInputElement | HTMLTextAreaElement
+  const value = props?.type === 'number' && target.value ? Number(target.value) : target.value
+
+  // Call vee-validate's handleChange first
+  veeValidateHandleChange(event)
+
+  // Then emit our events
+  emit('update:modelValue', value)
+  emit('change', value)
+  emit('input', event)
+}
+
+// Handle blur events
+const handleBlurEvent = (event: Event, veeValidateHandleBlur: (e: Event) => void) => {
+  veeValidateHandleBlur(event)
+  emit('blur', event)
+}
 
 const inputClasses = (valid: boolean, errors: string[]) => {
   const baseClasses =

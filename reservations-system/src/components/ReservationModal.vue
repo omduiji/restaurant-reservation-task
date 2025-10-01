@@ -14,7 +14,7 @@
       :key="`Edit-${branch?.id}`"
       :initial-values="initialFormValues"
       @submit="handleSubmit"
-      v-slot="{ meta, isSubmitting: veeSubmitting, values, setFieldValue }"
+      v-slot="{ meta, isSubmitting: veeSubmitting, values, setFieldValue, validateField }"
     >
       <div class="space-y-6">
         <div
@@ -35,6 +35,7 @@
           :step="15"
           :min="15"
           :max="480"
+          @change="() => validateField('schedules')"
         />
 
         <AppSelectInput
@@ -170,9 +171,9 @@ interface FormValues {
 
 interface ValidationContext {
   form?: {
-    values?: {
-      reservation_duration?: number
-    }
+    reservation_duration?: number
+    enabled_tables?: string[]
+    schedules?: DaySchedule[]
   }
 }
 
@@ -197,22 +198,6 @@ const {
   showResult,
 } = useConfirmationModal()
 
-// registerConfirmation('applySaturdayToAll', {
-//   modalTitle: 'Apply Saturday Schedule to All Days',
-//   modalMessage:
-//     'This will override all existing time slots for all days with the Saturday schedule. This action cannot be undone.',
-//   confirmText: 'Apply to All Days',
-//   cancelText: 'Cancel',
-//   variant: 'warning',
-//   successMessage: 'All reservations have been successfully disabled.',
-//   errorMessage: 'Failed to disable reservations. Please try again.',
-//   onConfirm: (data: {
-//     values: FormValues
-//     setFieldValue: (field: string, value: unknown) => void
-//   }) => {
-//     applySaturdaySchedule(data.values, data.setFieldValue)
-//   },
-// })
 registerConfirmation('applySaturdayToAll', {
   modalTitle: 'Apply Saturday Schedule to All Days',
   modalMessage:
@@ -369,9 +354,8 @@ const validateSchedules = (schedules: unknown, context?: ValidationContext): str
   if (!schedules || !Array.isArray(schedules)) {
     return 'Invalid schedule data'
   }
-
   const typedSchedules = schedules as DaySchedule[]
-  const reservationDuration = context?.form?.values?.reservation_duration ?? 60
+  const reservationDuration = context?.form?.reservation_duration ?? 60
 
   for (const schedule of typedSchedules) {
     if (!schedule.time_slots || schedule.time_slots.length === 0) {
