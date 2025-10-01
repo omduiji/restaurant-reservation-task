@@ -175,6 +175,9 @@ Always manage loading and errors properly
 ## 📦 Installation & Setup
 
 ```bash
+# enter project-folder
+cd /reservations-system
+
 # Install dependencies
 npm install
 
